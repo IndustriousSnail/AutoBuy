@@ -7,10 +7,11 @@
 # @Software: PyCharm
 import time
 
-from selenium import webdriver
+from PIL import Image
 
 from common.driver import Driver
 from log import log
+from utils import qr_utils
 
 
 class JD(object):
@@ -68,11 +69,16 @@ class JD(object):
         """
         driver = self.driver
         self.open_login_page()
+        # 将滑块拖到最右边，然后再截屏
+        driver.execute_script("window.scrollTo(10000,0)")
+        # 截屏
+        driver.save_screenshot("../qr_imgs/qr.png")
+        # 打开图片
+        qr_utils.open_qr_img("qr.png")
 
 
 if __name__ == '__main__':
     jd = JD()
     jd.login_qr()
-    time.sleep(10)
+    time.sleep(180)
     jd.driver.quit()
-
