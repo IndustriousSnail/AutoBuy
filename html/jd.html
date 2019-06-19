@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>选择抢购商品</title>
+</head>
+<script type="text/javascript">
+    function selectItem() {
+        var jdUrl = parent.document.getElementById("jd-iframe");
+        console.log("商品地址", jdUrl);
+    }
+</script>
+<body>
+<iframe id="jd-iframe" src="https://www.jd.com" width="100%" height="800"></iframe>
+<input type="button" value="选择商品完毕!" onclick="selectItem()">
+</body>
+</html>
