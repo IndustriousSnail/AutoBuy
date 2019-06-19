@@ -7,19 +7,15 @@
 # @Software: PyCharm
 import time
 
-from PIL import Image
-from selenium.webdriver.support.wait import WebDriverWait
-
 from common.driver import Driver
 from log import log
 from shop.base import Base
 from utils import qr_utils, wait_utils
-from selenium.webdriver.support import expected_conditions as ec
 
 
 class JD(Base):
 
-    def __init__(self):
+    def init(self):
         driver = Driver().get_driver()
         driver.implicitly_wait(30)
         driver.maximize_window()
@@ -75,7 +71,7 @@ class JD(Base):
         # 将滑块拖到最右边，然后再截屏
         driver.execute_script("window.scrollTo(10000,0)")
         # 截屏
-        driver.save_screenshot("../qr_imgs/qr.png")
+        driver.save_screenshot("./qr_imgs/qr.png")
         # 打开图片
         qr_utils.open_qr_img("qr.png")
         log.info("请进行扫码登陆")
@@ -88,10 +84,3 @@ class JD(Base):
         self.driver.get(goods_url)
         log.info("打开商品页面成功")
 
-
-if __name__ == '__main__':
-    jd = JD()
-    jd.login_qr()
-    jd.open_goods_page("https://item.jd.com/11299902969.html")
-    time.sleep(180)
-    jd.driver.quit()

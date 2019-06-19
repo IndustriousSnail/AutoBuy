@@ -1,12 +1,24 @@
+log_text = None
+root = None
+
+
+def gui_log(func):
+    def wrapper(*args, **kwargs):
+        log_text.config(state=tk.NORMAL)
+        log_msg = func(*args, **kwargs)
+        log_text.insert(tk.END, log_msg)
+        log_text.config(state=tk.DISABLED)
+        root.update()
+
+    return wrapper
+
+
 import time
 import tkinter as tk
 from threading import Thread
-
-from log import log
 from tkinter import messagebox as msg
 
 from shop.jd import JD
-from utils import time_utils
 
 
 class Shop(Thread):
@@ -53,22 +65,30 @@ class Shop(Thread):
 class GUI(object):
 
     def __init__(self):
-        root = tk.Tk()  # 创建窗口对象的背景色
-        root.geometry('800x500')
-
-        login_button = tk.Button(root, text='账号密码登录', width=20, height=2, command=self.login)
-        login_button.pack(padx=50, pady=120)
-
-        qr_login_button = tk.Button(root, text='扫码登录', width=20, height=2, command=self.qr_login)
-        qr_login_button.pack(padx=50)
-
+        self.root = tk.Tk()  # 创建窗口对象的背景色
+        global root
+        root = self.root
+        self.root.geometry('800x500')
+        self.root.resizable(0, 0)  # 阻止Python GUI的大小调整
+        self.login_init()
         self.shop_init(JD)  # 初始化商城页面, todo 选择抢购商城
-        root.mainloop()  # 进入消息循环
+        self.log_init()
+        self.root.mainloop()  # 进入消息循环
+
+    def login_init(self):
+        login_frame = tk.Frame(self.root)
+        login_button = tk.Button(login_frame, text='账号密码登录', width=20, height=2, command=self.login)
+        login_button.pack(padx=50, pady=80)
+
+        qr_login_button = tk.Button(login_frame, text='扫码登录', width=20, height=2, command=self.qr_login)
+        qr_login_button.pack(padx=50)
+        login_frame.pack(fill=tk.BOTH)
 
     def shop_init(self, shop_class):
         self.shop_thread = Shop(shop_class)
         self.shop_thread.start()
         self.shop_instance = self.shop_thread.get_shop_instance()
+        self.shop_thread.call(self.shop_instance.init)
 
     def login(self):
         msg.showwarning("提示", "暂不支持，敬请期待!")
@@ -76,6 +96,10 @@ class GUI(object):
     def qr_login(self):
         self.shop_thread.call(self.shop_instance.login_qr)
 
-
-if __name__ == '__main__':
-    GUI()
+    def log_init(self):
+        self.log_text = tk.Text(self.root, height=10, bg="white", fg="black")
+        self.log_text.config(state=tk.DISABLED)
+        self.log_text.pack(side=tk.BOTTOM, fill=tk.X)
+        self.root.update()
+        global log_text
+        log_text = self.log_text

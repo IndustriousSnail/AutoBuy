@@ -1,5 +1,8 @@
 class Base(object):
 
+    def init(self):
+        pass
+
     def login_qr(self):
         """
         二维码登录接口

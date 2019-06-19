@@ -11,11 +11,11 @@ def download_qr_img(img_url):
     :return: 图片的名称
     """
     img_filename = str(uuid.uuid1()).replace('-', '') + '.png'
-    result = urlretrieve(img_url, '../qr_imgs/%s' % img_filename)
+    result = urlretrieve(img_url, './qr_imgs/%s' % img_filename)
     if result:
         return img_filename
 
 
 def open_qr_img(img_filename):
-    img = Image.open("../qr_imgs/%s" % img_filename)
+    img = Image.open("./qr_imgs/%s" % img_filename)
     img.show()
