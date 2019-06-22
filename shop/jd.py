@@ -5,9 +5,10 @@
 # @Site    : 
 # @File    : jd.py
 # @Software: PyCharm
-import time
+from selenium.webdriver import ActionChains
 
 from common.driver import Driver
+from crawler import jd_crawler
 from log import log
 from shop.base import Base
 from utils import qr_utils, wait_utils
@@ -82,5 +83,64 @@ class JD(Base):
 
     def open_goods_page(self, goods_url):
         self.driver.get(goods_url)
-        log.info("打开商品页面成功")
+        if not wait_utils.until_url_contains(self.driver, "//item.jd.com/",
+                                             retry_interval=0.1, timeout=5):
+            log.error("打开商品页面失败")
+
+    def get_user_name(self):
+        user_name = jd_crawler.get_user_name(self.driver.page_source)
+        return user_name
+
+    def open_address_page(self):
+        self.driver.get("https://home.jd.com")  # 进入家目录
+        user_setting = self.driver.find_elements_by_xpath('//*[@id="nav"]/div/div[3]/div[2]/div[1]')  # 账户设置
+        ActionChains(self.driver).move_to_element(user_setting[0]).perform()  # 让鼠标悬浮在账户设置上
+        # 找到收获地址按钮
+        address_a = self.driver.find_elements_by_xpath('//*[@id="nav"]/div/div[3]/div[2]/div[2]/div/a[5]/span')
+        address_a[0].click()
+        if not wait_utils.until_url_contains(self.driver, "//easybuy.jd.com/address/getEasyBuyList.action",
+                                             retry_interval=0.1, timeout=5):
+            log.error("获取收获地址失败")
+
+    def get_address(self):
+        self.open_address_page()
+        address_html = self.driver.page_source
+        self.address_list = jd_crawler.get_address(address_html)
+        return self.address_list
+
+    def get_goods_info(self, goods_url):
+        self.open_goods_page(goods_url)
+        self.goods_info = jd_crawler.get_goods_info(self.driver.current_url, self.driver.page_source)
+        return self.goods_info
+
+    def check_conditions_of_purchase(self, price=None):
+        if self.goods_info.in_stock == '无货':
+            return False
+
+        if price:
+            # 如果商品金额小于等于预期金额，则开始抢购
+            if float(self.goods_info.price) <= price:
+                return True
+            else:
+                return False
+
+        return True
+
+    def order(self):
+        if self.goods_info.one_click_buy:
+            # 有一键购按钮，默认当前页面是商品页面
+            buy_button = self.driver.find_element_by_id("btn-onkeybuy")
+            buy_button.click()
+            if not wait_utils.until_url_contains(self.driver, "//trade.jd.com/shopping/order",
+                                                 retry_interval=0.01, timeout=20):
+                log.error("打开订单页面异常")
+                return False
+            # todo 进入订单页面
+
+        # 下单失败
+        return False
+
+
+
+
 
