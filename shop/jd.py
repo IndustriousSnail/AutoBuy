@@ -8,21 +8,25 @@
 from selenium.webdriver import ActionChains
 
 from common.driver import Driver
+from common.model import Cookie
 from crawler import jd_crawler
 from log import log
 from shop.base import Base
-from utils import qr_utils, wait_utils
+from utils import qr_utils, wait_utils, sqlite_utils
 
 
 class JD(Base):
 
-    def init(self):
+    def __init__(self):
         driver = Driver().get_driver()
         driver.implicitly_wait(30)
         driver.maximize_window()
-        driver.get("http://www.jd.com")
-        log.debug("打开京东页面")
         self.driver = driver
+
+    def init(self):
+        self.driver.get("http://www.jd.com")
+        log.debug("打开京东页面")
+
 
     def open_login_page(self):
         driver = self.driver
@@ -140,7 +144,16 @@ class JD(Base):
         # 下单失败
         return False
 
+    def get_cookies(self):
+        cookies = self.driver.get_cookies()
+        cookie_list = Cookie.from_dict(cookies)
+        # 将cookie存入数据库
+        sqlite_utils.insert_cookies(cookie_list)
 
-
+    def set_cookie(self, cookies):
+        self.driver.delete_all_cookies()
+        for item in cookies:
+            print(item.to_dict())
+            self.driver.add_cookie(item.to_dict())
 
 
