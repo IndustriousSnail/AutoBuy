@@ -27,7 +27,6 @@ class JD(Base):
         self.driver.get("http://www.jd.com")
         log.debug("打开京东页面")
 
-
     def open_login_page(self):
         driver = self.driver
         login_link = driver.find_element_by_id("ttbar-login")  # 获取登录链接
@@ -92,8 +91,8 @@ class JD(Base):
             log.error("打开商品页面失败")
 
     def get_user_name(self):
-        user_name = jd_crawler.get_user_name(self.driver.page_source)
-        return user_name
+        self.user_name = jd_crawler.get_user_name(self.driver.page_source)
+        return self.user_name
 
     def open_address_page(self):
         self.driver.get("https://home.jd.com")  # 进入家目录
@@ -144,16 +143,20 @@ class JD(Base):
         # 下单失败
         return False
 
-    def get_cookies(self):
+    def save_cookies(self):
         cookies = self.driver.get_cookies()
-        cookie_list = Cookie.from_dict(cookies)
+        cookie_list = Cookie.from_dict(self.user_name, cookies)
+        sqlite_utils.delete_cookies_by_username(self.user_name)
         # 将cookie存入数据库
         sqlite_utils.insert_cookies(cookie_list)
 
     def set_cookie(self, cookies):
         self.driver.delete_all_cookies()
         for item in cookies:
-            print(item.to_dict())
             self.driver.add_cookie(item.to_dict())
 
-
+    def check_login_result(self):
+        """检查登录结果"""
+        self.driver.get("https://www.jd.com/")
+        wait_utils.until_url_contains(self.driver, "//www.jd.com/", retry_interval=0.01)
+        return jd_crawler.check_login_result(self.driver.page_source)
