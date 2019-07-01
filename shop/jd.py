@@ -5,6 +5,8 @@
 # @Site    : 
 # @File    : jd.py
 # @Software: PyCharm
+import time
+
 from selenium.webdriver import ActionChains
 
 from common.driver import Driver
@@ -13,12 +15,47 @@ from crawler import jd_crawler
 from log import log
 from shop.base import Base
 from utils import qr_utils, wait_utils, sqlite_utils
+import threading
+
+
+class JdThread(threading.Thread):
+
+    def __init__(self, jd, price=None, in_stock=False, buy_time=None):
+        super().__init__()
+        self.jd = jd
+        self.price = price
+        self.in_stock = in_stock
+        self.buy_time = buy_time
+
+    def run(self):
+        sleep_time = 0.5  # 刷新间隔时间
+        while True:
+            time.sleep(sleep_time)
+            goods_info = self.jd.get_goods_info
+            could_buy = True
+            if self.price and float(goods_info.price) > float(self.price):
+                # 如果给了价格条件，并且价格当前价格大于预期价格，先不买
+                could_buy = False
+
+            if self.in_stock and goods_info.in_stock == '无货':
+                could_buy = False
+
+            if self.buy_time and int(time.time()) < int(self.buy_time):
+                could_buy = False
+
+            if could_buy:
+                if goods_info.one_click_buy:
+                    log.info("达到购买条件，准备下单")
+                else:
+                    log.error("达到购买条件，但是未找到一键购按钮")
+            else:
+                log.info("不满足购买条件")
 
 
 class JD(Base):
 
     def __init__(self):
-        pass
+        self.jd_thread = None
 
     def init(self):
         driver = Driver().get_driver()
@@ -35,7 +72,6 @@ class JD(Base):
         login_link.click()  # 点击登录按钮
         log.debug("点击我要登陆链接")
         wait_utils.until_url_contains(self.driver, "//passport.jd.com/new/login.aspx", retry_interval=0.01)
-
 
     def login(self, username, password):
         """
@@ -91,7 +127,7 @@ class JD(Base):
     def open_goods_page(self, goods_url):
         self.driver.get(goods_url)
         if not wait_utils.until_url_contains(self.driver, "//item.jd.com/",
-                                             retry_interval=0.1, timeout=5):
+                                             retry_interval=0.01, timeout=5):
             log.error("打开商品页面失败")
 
     def get_user_name(self):
@@ -164,3 +200,27 @@ class JD(Base):
         """检查登录结果"""
         wait_utils.open_page(self.driver, "https://www.jd.com/")
         return jd_crawler.check_login_result(self.driver.page_source)
+
+    def start_rush_buy(self, price=None, in_stock=False, buy_time=None):
+        """开始抢购"""
+        if not self.jd_thread:
+            # 已经在抢购了，需要先停止
+            return False
+
+        self.jd_thread = JdThread(self, price=price, in_stock=in_stock, buy_time=buy_time)
+        self.jd_thread.start()
+        return True
+
+
+
+
+
+
+
+
+
+
+
+
+
+
