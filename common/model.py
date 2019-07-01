@@ -1,4 +1,10 @@
-class Address(object):
+class Model(object):
+
+    def to_dict(self):
+        return {}
+
+
+class Address(Model):
     name = None
     address = None
     phone = None
@@ -7,7 +13,7 @@ class Address(object):
         return '%s %s %s' % (self.name, self.address, self.phone)
 
 
-class Goods(object):
+class Goods(Model):
     # 商品ID
     id = None
     name = None
@@ -20,12 +26,22 @@ class Goods(object):
 
     def __str__(self):
         return "id=%s, name=%s, price=%s, in_stock=%s, deliveryPlace=%s, oneClickBuy=%s" % (
-        self.id, self.name, self.price,
-        self.in_stock,
-        self.delivery_place, self.one_click_buy)
+            self.id, self.name, self.price,
+            self.in_stock,
+            self.delivery_place, self.one_click_buy)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "price": self.price,
+            "in_stock": self.in_stock,
+            "delivery_place": self.delivery_place,
+            "one_click_buy": self.one_click_buy,
+        }
 
 
-class Cookie(object):
+class Cookie(Model):
     username = None
     domain = None
     # int

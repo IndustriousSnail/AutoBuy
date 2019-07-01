@@ -18,12 +18,13 @@ from utils import qr_utils, wait_utils, sqlite_utils
 class JD(Base):
 
     def __init__(self):
+        pass
+
+    def init(self):
         driver = Driver().get_driver()
         driver.implicitly_wait(30)
         driver.maximize_window()
         self.driver = driver
-
-    def init(self):
         self.driver.get("http://www.jd.com")
         log.debug("打开京东页面")
 
@@ -33,6 +34,8 @@ class JD(Base):
 
         login_link.click()  # 点击登录按钮
         log.debug("点击我要登陆链接")
+        wait_utils.until_url_contains(self.driver, "//passport.jd.com/new/login.aspx", retry_interval=0.01)
+
 
     def login(self, username, password):
         """
@@ -71,18 +74,19 @@ class JD(Base):
         :return:
         """
         driver = self.driver
+        driver.get("https://www.jd.com")
         self.open_login_page()
         # 将滑块拖到最右边，然后再截屏
         driver.execute_script("window.scrollTo(10000,0)")
         # 截屏
         driver.save_screenshot("./qr_imgs/qr.png")
         # 打开图片
-        qr_utils.open_qr_img("qr.png")
-        log.info("请进行扫码登陆")
-        if wait_utils.until_url_contains(driver, "//www.jd.com"):
-            log.info("用户登陆成功")
-        else:
-            log.error("用户登陆超时")
+        # qr_utils.open_qr_img("qr.png")
+        # log.info("请进行扫码登陆")
+        # if wait_utils.until_url_contains(driver, "//www.jd.com"):
+        #     log.info("用户登陆成功")
+        # else:
+        #     log.error("用户登陆超时")
 
     def open_goods_page(self, goods_url):
         self.driver.get(goods_url)
@@ -91,6 +95,7 @@ class JD(Base):
             log.error("打开商品页面失败")
 
     def get_user_name(self):
+        wait_utils.open_page(self.driver, "https://www.jd.com")
         self.user_name = jd_crawler.get_user_name(self.driver.page_source)
         return self.user_name
 
@@ -157,6 +162,5 @@ class JD(Base):
 
     def check_login_result(self):
         """检查登录结果"""
-        self.driver.get("https://www.jd.com/")
-        wait_utils.until_url_contains(self.driver, "//www.jd.com/", retry_interval=0.01)
+        wait_utils.open_page(self.driver, "https://www.jd.com/")
         return jd_crawler.check_login_result(self.driver.page_source)

@@ -19,3 +19,11 @@ def until_url_contains(driver, pattern, retry_interval=0.5, timeout=180):
             # 如果超时，结束
             return False
 
+
+def open_page(driver, url):
+    if url in driver.current_url:
+        return True
+
+    driver.get(url)
+    until_url_contains(driver, url, retry_interval=0.01, timeout=10)
+

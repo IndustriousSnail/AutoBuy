@@ -15,6 +15,7 @@ def get_user_name(html_text):
     else:
         log.warning("获取用户名失败")
 
+
 def check_login_result(html_text):
     """
     检查登录结果，如果上面包含请登录三个字，说明登录失效，需要重新登录
