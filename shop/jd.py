@@ -31,7 +31,7 @@ class JdThread(threading.Thread):
         sleep_time = 0.5  # 刷新间隔时间
         while True:
             time.sleep(sleep_time)
-            goods_info = self.jd.get_goods_info
+            goods_info = self.jd.get_goods_info(self.jd.current_goods_url)
             could_buy = True
             if self.price and float(goods_info.price) > float(self.price):
                 # 如果给了价格条件，并且价格当前价格大于预期价格，先不买
@@ -153,6 +153,7 @@ class JD(Base):
         return self.address_list
 
     def get_goods_info(self, goods_url):
+        self.current_goods_url = goods_url
         self.open_goods_page(goods_url)
         self.goods_info = jd_crawler.get_goods_info(self.driver.current_url, self.driver.page_source)
         return self.goods_info
@@ -203,7 +204,7 @@ class JD(Base):
 
     def start_rush_buy(self, price=None, in_stock=False, buy_time=None):
         """开始抢购"""
-        if not self.jd_thread:
+        if self.jd_thread:
             # 已经在抢购了，需要先停止
             return False
 

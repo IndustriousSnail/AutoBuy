@@ -85,6 +85,21 @@ def get_logined_username():
         return resp_format(return_code=404)
 
 
+@app.route("/auto_buy/start_rush_buy", methods=['POST'])
+def start_rush_buy():
+    price = request.json.get("price")
+    in_stock = request.json.get("inStock")
+    buy_time = request.json.get("buyTime")
+    if price is None and in_stock is False and buy_time is None:
+        return resp_format(return_code=400, return_message="至少选择一项抢购条件")
+
+    result = jd.start_rush_buy(price, in_stock, buy_time)
+    if result:
+        return resp_format()
+    else:
+        return resp_format(return_code=403, return_message="抢购已经开始")
+
+
 if __name__ == '__main__':
     os.system("taskkill /im chrome.exe /f")
     os.system("taskkill /im chromedriver75.exe /f")
