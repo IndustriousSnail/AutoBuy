@@ -1,5 +1,4 @@
 import os
-import time
 
 from flask import Flask, Response, json, request, make_response
 
@@ -56,6 +55,17 @@ def finish_scan_qr():
     return resp_format(username, return_message="您好，%s!" % username)
 
 
+@app.route("/auto_buy/check_finish_scan_qr", methods=['POST'])
+def check_finish_scan_qr():
+    """检测是否完成扫码登录"""
+    if not wait_utils.until_url_contains(jd.driver, "//www.jd.com", retry_interval=0.01, timeout=0.5):
+        # 还没扫码
+        return resp_format(False)
+    else:
+        # 扫过码了
+        return finish_scan_qr()
+
+
 @app.route("/auto_buy/get_logined_user", methods=['POST'])
 def get_logined_user():
     return resp_format(sqlite_utils.get_logined_users())
@@ -87,6 +97,7 @@ def get_logined_username():
 
 @app.route("/auto_buy/start_rush_buy", methods=['POST'])
 def start_rush_buy():
+    """开始抢购"""
     price = request.json.get("price")
     in_stock = request.json.get("inStock")
     buy_time = request.json.get("buyTime")
@@ -100,9 +111,27 @@ def start_rush_buy():
         return resp_format(return_code=403, return_message="抢购已经开始")
 
 
+@app.route("/auto_buy/cancel_rush_buy", methods=['POST'])
+def cancel_rush_buy():
+    jd.jd_thread.stop()
+    jd.jd_thread = None
+    return resp_format()
+
+
+@app.route("/auto_buy/check_buying", methods=['POST'])
+def check_buying():
+    """检测是否正在抢购"""
+    return resp_format(not jd.jd_thread is None)
+
+
+@app.route("/auto_buy/check_order_success", methods=['POST'])
+def check_order_success():
+    """检测是否下单成功"""
+    return resp_format(jd.jd_thread.success)
+
+
 if __name__ == '__main__':
     os.system("taskkill /im chrome.exe /f")
     os.system("taskkill /im chromedriver75.exe /f")
-    time.sleep(2)
     jd.init()
     app.run()

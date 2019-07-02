@@ -26,10 +26,15 @@ class JdThread(threading.Thread):
         self.price = price
         self.in_stock = in_stock
         self.buy_time = buy_time
+        self.is_stop = False
+        self.success = None
 
     def run(self):
-        sleep_time = 0.5  # 刷新间隔时间
+        sleep_time = 2.0  # 刷新间隔时间
         while True:
+            if self.is_stop:
+                log.info("结束抢购线程")
+                return
             time.sleep(sleep_time)
             goods_info = self.jd.get_goods_info(self.jd.current_goods_url)
             could_buy = True
@@ -46,10 +51,21 @@ class JdThread(threading.Thread):
             if could_buy:
                 if goods_info.one_click_buy:
                     log.info("达到购买条件，准备下单")
+                    if self.jd.order():
+                        self.is_stop = True
+                        self.success = True
+                        log.info("下单成功")
+                    else:
+                        self.is_stop = True
+                        self.success = False
+                        log.info("下单失败")
                 else:
                     log.error("达到购买条件，但是未找到一键购按钮")
             else:
                 log.info("不满足购买条件")
+
+    def stop(self):
+        self.is_stop = True
 
 
 class JD(Base):
@@ -154,7 +170,12 @@ class JD(Base):
 
     def get_goods_info(self, goods_url):
         self.current_goods_url = goods_url
-        self.open_goods_page(goods_url)
+        if goods_url in self.driver.current_url:
+            # 如果已经在这个商品页面上了，刷新该页面
+            self.driver.refresh()
+        else:
+            # 如果不再这个商品页面，打开这个页面
+            self.open_goods_page(goods_url)
         self.goods_info = jd_crawler.get_goods_info(self.driver.current_url, self.driver.page_source)
         return self.goods_info
 
@@ -177,10 +198,13 @@ class JD(Base):
             buy_button = self.driver.find_element_by_id("btn-onkeybuy")
             buy_button.click()
             if not wait_utils.until_url_contains(self.driver, "//trade.jd.com/shopping/order",
-                                                 retry_interval=0.01, timeout=20):
+                                                 retry_interval=0.01, timeout=60):
                 log.error("打开订单页面异常")
                 return False
-            # todo 进入订单页面
+            # 找到提交订单按钮，并点击
+            order_submit_button = self.driver.find_element_by_id("order-submit")
+            order_submit_button.click()
+            return True
 
         # 下单失败
         return False
@@ -211,17 +235,3 @@ class JD(Base):
         self.jd_thread = JdThread(self, price=price, in_stock=in_stock, buy_time=buy_time)
         self.jd_thread.start()
         return True
-
-
-
-
-
-
-
-
-
-
-
-
-
-
