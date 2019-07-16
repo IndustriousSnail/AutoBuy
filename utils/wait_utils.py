@@ -20,10 +20,12 @@ def until_url_contains(driver, pattern, retry_interval=0.5, timeout=180):
             return False
 
 
-def open_page(driver, url):
+def open_page(driver, url, refresh=False):
     if url in driver.current_url:
-        return True
+        if refresh:
+            driver.refresh()
+        else:
+            return True
 
     driver.get(url)
     until_url_contains(driver, url, retry_interval=0.01, timeout=10)
-

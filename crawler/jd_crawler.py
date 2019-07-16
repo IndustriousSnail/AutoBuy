@@ -1,5 +1,7 @@
+import json
 import re
 
+import requests
 from pyquery import PyQuery as pq
 
 from common.model import Address, Goods
@@ -98,4 +100,45 @@ def get_goods_info(goods_url, html_text):
     else:
         goods.one_click_buy = False
 
+    return goods
+
+
+def get_goods_info_from_cart(html_text):
+    """从购物车页面获取商品详情"""
+    doc = pq(html_text)
+    item_length = len(doc(".item-form"))
+    if item_length > 1:
+        log.error("清空购物车失败，购物车存在两个以上商品")
+        return
+    elif item_length <= 0:
+        log.error("加入购物车失败，购物车为空")
+        return
+
+    goods = Goods()
+    goods.price = float(doc(".plus-switch strong").text().replace("¥", ""))
+    goods.in_stock = doc(".quantity-txt")[0].text == "有货"
+    goods.name = doc(".p-name")("a").text().strip()
+    return goods
+
+
+def get_goods_info_by_requests(goods_id):
+    resp = requests.get("https://c0.3.cn/stock", {
+        "skuId": goods_id,
+        "cat": "123,456,789",
+        "area": "1_2345_67890_1",
+        "buyNum": "1",
+        "extraParam": '{"originid":"1"}',
+        "ch": "1",
+        "fqsp": "0",
+        "callback": "jQuery1454717"
+    })
+    goods_dict = json.loads(resp.text.replace("jQuery1454717(", "")[:-1])
+
+    goods = Goods()
+    if "有货" in goods_dict["stock"]["stockDesc"]:
+        goods.in_stock = True
+    else:
+        goods.in_stock = False
+
+    goods.price = float(goods_dict["stock"]["jdPrice"]["p"])
     return goods

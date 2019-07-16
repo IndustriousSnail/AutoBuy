@@ -121,7 +121,7 @@ def cancel_rush_buy():
 @app.route("/auto_buy/check_buying", methods=['POST'])
 def check_buying():
     """检测是否正在抢购"""
-    return resp_format(not jd.jd_thread is None)
+    return resp_format(not jd.jd_thread is None and jd.jd_thread.is_alive())
 
 
 @app.route("/auto_buy/check_order_success", methods=['POST'])
